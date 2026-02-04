@@ -26,7 +26,6 @@ const AdBanner: React.FC = () => {
     <div className="w-full max-w-3xl mx-auto my-4 px-4 overflow-hidden text-center">
       {/* 
         Google AdSense Responsive Unit 
-        Replace data-ad-client and data-ad-slot with your actual ID 
       */}
       <div className="bg-white border border-slate-100 rounded-lg p-2 shadow-sm min-h-[100px] flex items-center justify-center">
           <span className="text-xs text-slate-300 absolute">Advertisement</span>
@@ -34,7 +33,7 @@ const AdBanner: React.FC = () => {
             ref={adRef}
             className="adsbygoogle"
             style={{ display: 'block', minHeight: '90px' }} // min-height prevents Cumulative Layout Shift (CLS)
-            data-ad-client="ca-pub-0000000000000000" 
+            data-ad-client="ca-pub-7969346905229420" 
             data-ad-slot="0000000000"
             data-ad-format="auto"
             data-full-width-responsive="true"
