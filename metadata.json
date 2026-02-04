@@ -1,0 +1,7 @@
+{
+  "name": "ER now(no map)",
+  "description": "Real-time emergency room availability checker with a focus on pediatric beds for parents. visualize data from the National Medical Center.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
