@@ -115,7 +115,8 @@ export const fetchHospitalData = async (fullRegionValue: string): Promise<FetchR
     }
   }
 
-  const baseUrl = "https://apis.data.go.kr/B552657/ErmctInfoInqireService/getEmrrmRltmUsefulSckbdInfoInqire";
+  // Use local proxy path (Handled by Vite in Dev, Vercel Rewrites in Prod)
+  const baseUrl = "/api/er-data";
   
   let queryString = `serviceKey=${serviceKey}&STAGE1=${encodeURIComponent(stage1)}&pageNo=1&numOfRows=100`;
   
@@ -125,12 +126,8 @@ export const fetchHospitalData = async (fullRegionValue: string): Promise<FetchR
   
   const targetUrl = `${baseUrl}?${queryString}`;
   
-  // Using corsproxy.io as it is often more reliable for public APIs
-  // Note: We encode the ENTIRE target URL before passing it to the proxy
-  const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
-
   try {
-    const response = await fetch(proxyUrl);
+    const response = await fetch(targetUrl);
     if (!response.ok) {
       throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
     }

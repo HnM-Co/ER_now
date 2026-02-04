@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/er-data",
+      "destination": "https://apis.data.go.kr/B552657/ErmctInfoInqireService/getEmrrmRltmUsefulSckbdInfoInqire"
+    }
+  ]
+}
