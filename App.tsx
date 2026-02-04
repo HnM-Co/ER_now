@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Header from './components/Header';
 import HospitalCard from './components/HospitalCard';
 import StatusGuide from './components/StatusGuide';
+import AdBanner from './components/AdBanner';
 import { fetchHospitalData, calculateDistance, DataSourceType } from './services/api';
 import { HospitalData, REGIONS, RegionOption } from './types';
 
@@ -265,7 +266,9 @@ function App() {
         isLocating={isLocating} 
       />
 
-      <main className="max-w-3xl mx-auto px-4 py-6 flex-grow w-full">
+      <AdBanner />
+
+      <main className="max-w-3xl mx-auto px-4 py-2 flex-grow w-full">
         {/* Source Badge */}
         <div className="flex justify-end mb-4">
              {dataSource === 'REALTIME' ? (
@@ -451,8 +454,14 @@ function App() {
         )}
       </main>
 
-      <footer className="w-full py-6 text-center text-slate-400 text-xs font-medium">
-        @ acedoctor2026
+      <footer className="w-full py-6 text-center border-t border-slate-200 mt-4 bg-white">
+        <div className="text-slate-400 text-xs font-medium space-y-2">
+            <p>@ acedoctor2026</p>
+            <div className="flex justify-center gap-4">
+                <button onClick={() => alert("개인정보처리방침 준비중입니다.")} className="hover:text-slate-600">개인정보처리방침</button>
+                <button onClick={() => alert("이용약관 준비중입니다.")} className="hover:text-slate-600">이용약관</button>
+            </div>
+        </div>
       </footer>
 
       {/* Persistent Refresh Button */}
