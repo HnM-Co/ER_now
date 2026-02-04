@@ -438,17 +438,54 @@ function App() {
                  </p>
                </div>
              ) : (
-               processedHospitals.map((hospital) => (
-                 <HospitalCard 
-                    key={hospital.hpid} 
-                    data={hospital}
-                    isFavorite={isFavorite(hospital.hpid)}
-                    onToggleFavorite={(e) => {
-                        e.stopPropagation(); // prevent card click if we ever add one
-                        toggleFavorite(hospital);
-                    }}
-                 />
-               ))
+               (() => {
+                    const favs = processedHospitals.filter(h => isFavorite(h.hpid));
+                    const nonFavs = processedHospitals.filter(h => !isFavorite(h.hpid));
+                    
+                    return (
+                        <>
+                            {/* Favorites */}
+                            {favs.map(hospital => (
+                                <HospitalCard 
+                                    key={hospital.hpid} 
+                                    data={hospital}
+                                    isFavorite={true}
+                                    onToggleFavorite={(e) => {
+                                        e.stopPropagation();
+                                        toggleFavorite(hospital);
+                                    }}
+                                />
+                            ))}
+
+                            {/* Ad after Favorites */}
+                            {favs.length > 0 && (
+                                <div className="w-full">
+                                    <AdBanner />
+                                </div>
+                            )}
+
+                            {/* Non-Favorites */}
+                            {nonFavs.map((hospital, index) => (
+                                <React.Fragment key={hospital.hpid}>
+                                    <HospitalCard 
+                                        data={hospital}
+                                        isFavorite={false}
+                                        onToggleFavorite={(e) => {
+                                            e.stopPropagation();
+                                            toggleFavorite(hospital);
+                                        }}
+                                    />
+                                    {/* Ad every 10 items */}
+                                    {(index + 1) % 10 === 0 && index !== nonFavs.length - 1 && (
+                                        <div className="w-full">
+                                            <AdBanner />
+                                        </div>
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </>
+                    );
+               })()
              )}
           </div>
         )}
