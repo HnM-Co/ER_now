@@ -289,8 +289,6 @@ function App() {
         isLocating={isLocating} 
       />
 
-      <AdBanner />
-
       <main className="max-w-3xl mx-auto px-4 py-2 flex-grow w-full">
         {/* Source Badge */}
         <div className="flex justify-end mb-4">
