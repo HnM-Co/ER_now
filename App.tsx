@@ -535,15 +535,34 @@ function App() {
       </footer>
 
       {/* Persistent Refresh Button */}
-      <button 
-        onClick={() => loadData(selectedMainRegion, selectedSubRegion)}
-        className="fixed bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-lg shadow-indigo-200 transition-transform active:scale-95 z-40"
-        aria-label="Refresh Data"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-      </button>
+      <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-40">
+          {/* Location FAB */}
+          <button 
+            onClick={handleGPSClick}
+            disabled={isLocating}
+            className="bg-white text-indigo-600 p-4 rounded-full shadow-lg shadow-slate-200 transition-transform active:scale-95 border border-indigo-100 flex items-center justify-center"
+            aria-label="Find My Location"
+          >
+            {isLocating ? (
+                <div className="animate-spin h-6 w-6 border-2 border-indigo-600 border-t-transparent rounded-full"></div>
+            ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                </svg>
+            )}
+          </button>
+
+          {/* Refresh FAB */}
+          <button 
+            onClick={() => loadData(selectedMainRegion, selectedSubRegion)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-lg shadow-indigo-200 transition-transform active:scale-95 flex items-center justify-center"
+            aria-label="Refresh Data"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className={`h-6 w-6 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+      </div>
     </div>
   );
 }

@@ -23,16 +23,16 @@ const AdBanner: React.FC = () => {
   }, []);
 
   return (
-    <div className="w-full max-w-3xl mx-auto my-4 px-4 overflow-hidden text-center">
+    <div className="w-full max-w-3xl mx-auto my-2 px-4 overflow-hidden text-center">
       {/* 
         Google AdSense Responsive Unit 
       */}
-      <div className="bg-white border border-slate-100 rounded-lg p-1 shadow-sm min-h-[70px] relative text-center">
-          <span className="text-[10px] text-slate-300 absolute top-0.5 left-1.5">Advertisement</span>
+      <div className="bg-white border border-slate-100 rounded-lg p-0.5 shadow-sm min-h-[55px] relative text-center flex items-center justify-center overflow-hidden">
+          <span className="text-[9px] text-slate-300 absolute top-0 left-1 z-10 bg-white/80 px-1 rounded-br">Ad</span>
           <ins
             ref={adRef}
             className="adsbygoogle"
-            style={{ display: 'block', minHeight: '60px', width: '100%' }} // min-height prevents Cumulative Layout Shift (CLS)
+            style={{ display: 'block', minHeight: '50px', maxHeight: '60px', width: '100%' }} // min-height prevents Cumulative Layout Shift (CLS)
             data-ad-client="ca-pub-7969346905229420" 
             data-ad-slot="0000000000"
             data-ad-format="auto"

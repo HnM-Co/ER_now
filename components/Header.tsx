@@ -24,8 +24,21 @@ const Header: React.FC<HeaderProps> = ({ onGpsClick, isLocating }) => {
         </div>
 
         {/* Location Bar */}
-        <div className="flex justify-between items-center">
-            {/* GPS Button Removed */}
+        <div className="flex justify-between items-center mt-2">
+            <button 
+                onClick={onGpsClick}
+                disabled={isLocating}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 active:scale-95 transition-all shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+                {isLocating ? (
+                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                </svg>
+                )}
+                내 위치 중심으로 보기 (거리순 정렬)
+            </button>
         </div>
       </div>
     </header>
