@@ -17,6 +17,7 @@ function App() {
   const [filterPediatric, setFilterPediatric] = useState<boolean>(false);
   const [dataSource, setDataSource] = useState<DataSourceType>('REALTIME');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [visibleCount, setVisibleCount] = useState<number>(30);
   
   // Favorites State (Stores full hospital objects to display even if not in current region)
   const [favorites, setFavorites] = useState<HospitalData[]>(() => {
@@ -173,7 +174,13 @@ function App() {
   // Reload when selection changes
   useEffect(() => {
     loadData(selectedMainRegion, selectedSubRegion);
+    setVisibleCount(30); // Reset pagination on region change
   }, [selectedMainRegion, selectedSubRegion, loadData]);
+
+  // Reset pagination on filter change
+  useEffect(() => {
+    setVisibleCount(30);
+  }, [filterPediatric, searchTerm]);
 
   // Handle Filtering, Sorting, and Favorites Merging
   const processedHospitals = useMemo(() => {
@@ -232,9 +239,17 @@ function App() {
         if (aIsFav && !bIsFav) return -1;
         if (!aIsFav && bIsFav) return 1;
 
-        // Priority 1: Distance (Only if user GPS is active AND both have distance)
-        if (userLocation && a.distance !== undefined && b.distance !== undefined) {
-             return a.distance - b.distance;
+        // Priority 1: Distance (Only if user GPS is active)
+        if (userLocation) {
+             // If both have distance, compare them
+             if (a.distance !== undefined && b.distance !== undefined) {
+                 return a.distance - b.distance;
+             }
+             // If only A has distance, A comes first
+             if (a.distance !== undefined) return -1;
+             // If only B has distance, B comes first
+             if (b.distance !== undefined) return 1;
+             // If neither has distance, fall through to next criteria (beds)
         }
 
         // Priority 2: General Bed Availability (descending)
@@ -243,6 +258,14 @@ function App() {
 
     return combined;
   }, [hospitals, favorites, filterPediatric, searchTerm, userLocation]);
+
+  const visibleHospitals = processedHospitals.slice(0, visibleCount);
+  const hasMore = visibleCount < processedHospitals.length;
+
+  const handleLoadMore = () => {
+      setVisibleCount(prev => prev + 30);
+  };
+
 
 
   const handleMainRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -439,8 +462,8 @@ function App() {
                </div>
              ) : (
                (() => {
-                    const favs = processedHospitals.filter(h => isFavorite(h.hpid));
-                    const nonFavs = processedHospitals.filter(h => !isFavorite(h.hpid));
+                    const favs = visibleHospitals.filter(h => isFavorite(h.hpid));
+                    const nonFavs = visibleHospitals.filter(h => !isFavorite(h.hpid));
                     
                     return (
                         <>
@@ -483,6 +506,16 @@ function App() {
                                     )}
                                 </React.Fragment>
                             ))}
+
+                            {/* Load More Button */}
+                            {hasMore && (
+                                <button 
+                                    onClick={handleLoadMore}
+                                    className="w-full py-4 mt-4 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-colors shadow-sm"
+                                >
+                                    더 보기 ({processedHospitals.length - visibleCount}개 남음)
+                                </button>
+                            )}
                         </>
                     );
                })()

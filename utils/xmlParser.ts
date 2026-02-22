@@ -59,3 +59,35 @@ export const parseHospitalXml = (xmlText: string): HospitalData[] => {
     return [];
   }
 };
+
+/**
+ * Parses the XML response from the Hospital List API (getEgytListInfoInqire).
+ * Returns a Map of hpid -> { lat, lon }
+ */
+export const parseHospitalListXml = (xmlText: string): Map<string, { lat: number, lon: number }> => {
+  try {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+    const items = xmlDoc.getElementsByTagName("item");
+    const result = new Map<string, { lat: number, lon: number }>();
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const hpid = item.getElementsByTagName("hpid")[0]?.textContent;
+      const latStr = item.getElementsByTagName("wgs84Lat")[0]?.textContent;
+      const lonStr = item.getElementsByTagName("wgs84Lon")[0]?.textContent;
+
+      if (hpid && latStr && lonStr) {
+        const lat = parseFloat(latStr);
+        const lon = parseFloat(lonStr);
+        if (!isNaN(lat) && !isNaN(lon)) {
+          result.set(hpid, { lat, lon });
+        }
+      }
+    }
+    return result;
+  } catch (e) {
+    console.error("XML List Parsing Error", e);
+    return new Map();
+  }
+};

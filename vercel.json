@@ -3,6 +3,14 @@
     {
       "source": "/api/er-data",
       "destination": "https://apis.data.go.kr/B552657/ErmctInfoInqireService/getEmrrmRltmUsefulSckbdInfoInqire"
+    },
+    {
+      "source": "/api/er-list",
+      "destination": "https://apis.data.go.kr/B552657/ErmctInfoInqireService/getEgytListInfoInqire"
+    },
+    {
+      "source": "/((?!api/|assets/|favicon.ico).*)",
+      "destination": "/index.html"
     }
   ]
 }

@@ -1,12 +1,14 @@
 import { HospitalData, REGIONS } from '../types';
-import { parseHospitalXml } from '../utils/xmlParser';
+import { parseHospitalXml, parseHospitalListXml } from '../utils/xmlParser';
 
 // [실제 데이터 보장 수정]
 // 환경변수가 로드되지 않는 상황에서도 실제 데이터를 보여주기 위해 키를 백업으로 설정합니다.
 const ENV_API_KEY = (import.meta as any).env?.VITE_DATA_API_KEY || "a0f92aac1356efd3339d4c1a42571bc0420edd9fe0a5b9c4a4ee02386223cf60";
 
 const CACHE_KEY_PREFIX = "ER_DATA_CACHE_";
-const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+const LIST_CACHE_KEY_PREFIX = "ER_LIST_CACHE_";
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes for real-time data
+const LIST_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours for hospital list (coordinates)
 
 export type DataSourceType = 'REALTIME' | 'SIMULATION';
 
@@ -19,6 +21,33 @@ interface CachedData {
   timestamp: number;
   data: HospitalData[];
 }
+
+interface CachedList {
+  timestamp: number;
+  data: Map<string, { lat: number, lon: number }>;
+}
+
+// Helper to serialize Map for localStorage
+const mapReplacer = (_key: any, value: any) => {
+  if(value instanceof Map) {
+    return {
+      dataType: 'Map',
+      value: Array.from(value.entries()),
+    };
+  } else {
+    return value;
+  }
+};
+
+const mapReviver = (_key: any, value: any) => {
+  if(typeof value === 'object' && value !== null) {
+    if (value.dataType === 'Map') {
+      return new Map(value.value);
+    }
+  }
+  return value;
+};
+
 
 export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
   const R = 6371; 
@@ -85,6 +114,63 @@ const generateMockData = (region: string): HospitalData[] => {
   });
 };
 
+const fetchHospitalList = async (fullRegionValue: string, serviceKey: string): Promise<Map<string, { lat: number, lon: number }>> => {
+  const parts = fullRegionValue.split(' ');
+  const stage1 = parts[0] === '전국' ? '' : parts[0];
+  // We intentionally ignore stage2 for the list API to fetch ALL hospitals in the main region (e.g., Seoul).
+  // This ensures we get coordinates even if the sub-region name slightly differs or if the user selected 'All'.
+  // The client-side map lookup is fast enough for ~500-1000 items.
+
+  // Use only STAGE1 for the cache key to avoid redundant fetches for different sub-regions
+  const cacheKey = `${LIST_CACHE_KEY_PREFIX}${stage1 || 'ALL'}`;
+  const cachedRaw = localStorage.getItem(cacheKey);
+
+  if (cachedRaw) {
+    try {
+      const cached: CachedList = JSON.parse(cachedRaw, mapReviver);
+      const now = Date.now();
+      if (now - cached.timestamp < LIST_CACHE_DURATION) {
+        // console.log(`Using cached list data for ${stage1}`);
+        return cached.data;
+      }
+    } catch (e) {
+      console.warn("Failed to parse cached list data", e);
+      localStorage.removeItem(cacheKey);
+    }
+  }
+
+  const baseUrl = "/api/er-list";
+  // Fetch up to 1000 items to cover large provinces like Gyeonggi-do or Nationwide
+  let queryString = `serviceKey=${serviceKey}&pageNo=1&numOfRows=1000`;
+  
+  if (stage1) {
+    queryString += `&STAGE1=${encodeURIComponent(stage1)}`;
+  }
+  
+  const targetUrl = `${baseUrl}?${queryString}`;
+
+  try {
+    const response = await fetch(targetUrl);
+    if (!response.ok) return new Map();
+    
+    const xmlText = await response.text();
+    const coordsMap = parseHospitalListXml(xmlText);
+    
+    if (coordsMap.size > 0) {
+      const cachePayload = {
+        timestamp: Date.now(),
+        data: coordsMap
+      };
+      localStorage.setItem(cacheKey, JSON.stringify(cachePayload, mapReplacer));
+    }
+    
+    return coordsMap;
+  } catch (error) {
+    console.error("Failed to fetch hospital list:", error);
+    return new Map();
+  }
+};
+
 export const fetchHospitalData = async (fullRegionValue: string): Promise<FetchResult> => {
   // Clean the API Key (remove quotes/spaces)
   const rawKey = ENV_API_KEY.replace(/['"]/g, '').trim();
@@ -100,25 +186,32 @@ export const fetchHospitalData = async (fullRegionValue: string): Promise<FetchR
   const serviceKey = rawKey.includes('%') ? rawKey : encodeURIComponent(rawKey);
 
   const parts = fullRegionValue.split(' ');
-  const stage1 = parts[0];
-  const stage2 = parts.length > 1 ? parts.slice(1).join(' ') : undefined;
+  const stage1 = parts[0] === '전국' ? '' : parts[0];
+  const stage2 = (parts.length > 1 && parts[0] !== '전국') ? parts.slice(1).join(' ') : undefined;
 
   const cacheKey = `${CACHE_KEY_PREFIX}${fullRegionValue}`;
   
+  // Try to get cached real-time data first
   const cachedRaw = localStorage.getItem(cacheKey);
   if (cachedRaw) {
     const cached: CachedData = JSON.parse(cachedRaw);
     const now = Date.now();
     if (now - cached.timestamp < CACHE_DURATION) {
       console.log(`Using cached data for ${fullRegionValue}`);
+      
+      // Even if we use cached real-time data, we might want to ensure coordinates are attached if missing
+      // But for simplicity, we assume cached data already has coordinates if they were available when cached.
       return { data: cached.data, source: 'REALTIME' };
     }
   }
 
-  // Use local proxy path (Handled by Vite in Dev, Vercel Rewrites in Prod)
+  // Fetch Real-time Data
   const baseUrl = "/api/er-data";
+  let queryString = `serviceKey=${serviceKey}&pageNo=1&numOfRows=1000`; // Increase to 1000 for nationwide coverage
   
-  let queryString = `serviceKey=${serviceKey}&STAGE1=${encodeURIComponent(stage1)}&pageNo=1&numOfRows=100`;
+  if (stage1) {
+    queryString += `&STAGE1=${encodeURIComponent(stage1)}`;
+  }
   
   if (stage2) {
     queryString += `&STAGE2=${encodeURIComponent(stage2)}`;
@@ -127,11 +220,16 @@ export const fetchHospitalData = async (fullRegionValue: string): Promise<FetchR
   const targetUrl = `${baseUrl}?${queryString}`;
   
   try {
-    const response = await fetch(targetUrl);
-    if (!response.ok) {
-      throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+    // Parallel Fetch: Real-time Data AND Hospital List (for coordinates)
+    const [realTimeResponse, coordsMap] = await Promise.all([
+      fetch(targetUrl),
+      fetchHospitalList(fullRegionValue, serviceKey)
+    ]);
+
+    if (!realTimeResponse.ok) {
+      throw new Error(`Network response was not ok: ${realTimeResponse.status} ${realTimeResponse.statusText}`);
     }
-    const xmlText = await response.text();
+    const xmlText = await realTimeResponse.text();
     
     // Check for API Error Response in XML
     if (xmlText.includes("<cmmMsgHeader>") || xmlText.includes("<errMsg>") || xmlText.includes("SERVICE KEY")) {
@@ -143,12 +241,21 @@ export const fetchHospitalData = async (fullRegionValue: string): Promise<FetchR
     const parsedData = parseHospitalXml(xmlText);
 
     if (parsedData.length > 0) {
+      // Merge Coordinates
+      const mergedData = parsedData.map(hospital => {
+        const coords = coordsMap.get(hospital.hpid);
+        if (coords) {
+          return { ...hospital, wgs84Lat: coords.lat, wgs84Lon: coords.lon };
+        }
+        return hospital;
+      });
+
       const cachePayload: CachedData = {
         timestamp: Date.now(),
-        data: parsedData
+        data: mergedData
       };
       localStorage.setItem(cacheKey, JSON.stringify(cachePayload));
-      return { data: parsedData, source: 'REALTIME' };
+      return { data: mergedData, source: 'REALTIME' };
     } else {
         // Empty data but valid XML? likely just no hospitals found in that region
         if (xmlText.includes("<items>")) {

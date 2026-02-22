@@ -14,6 +14,12 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api\/er-data/, ''),
         secure: false,
       },
+      '/api/er-list': {
+        target: 'https://apis.data.go.kr/B552657/ErmctInfoInqireService/getEgytListInfoInqire',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/er-list/, ''),
+        secure: false,
+      },
     },
   },
 });
