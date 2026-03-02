@@ -49,9 +49,7 @@ export const parseHospitalXml = (xmlText: string): HospitalData[] => {
         phpid: getText("phpid"),
         lastUpdate: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
         wgs84Lat: lat !== 0 ? lat : undefined,
-        wgs84Lon: lon !== 0 ? lon : undefined,
-        erMsg: getText("hvdnm") || getText("dutyEryn"), // Fallback to dutyEryn or hvdnm
-        severeMsg: getText("symTypNm")
+        wgs84Lon: lon !== 0 ? lon : undefined
       });
     }
 

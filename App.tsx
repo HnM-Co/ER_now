@@ -74,9 +74,13 @@ function App() {
         console.log(`Location found via ${source}:`, lat, lon);
         setUserLocation({ lat, lon });
         
-        // As requested by user: Set region to Nationwide (전국) and All (전체)
-        setSelectedMainRegion(REGIONS[0]);
-        setSelectedSubRegion('전체');
+        // Auto-select nearest main region
+        const nearestRegion = findNearestRegion(lat, lon);
+        
+        if (nearestRegion.value !== selectedMainRegion.value) {
+            setSelectedMainRegion(nearestRegion);
+            setSelectedSubRegion('전체');
+        }
         
         setIsLocating(false);
         if (source === 'IP' && !silentMode) {

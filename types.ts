@@ -26,10 +26,6 @@ export interface HospitalData {
   wgs84Lon?: number; // Longitude
   wgs84Lat?: number; // Latitude
   distance?: number; // Distance from user in km
-  
-  // Messages
-  erMsg?: string;
-  severeMsg?: string;
 }
 
 export interface RegionOption {
