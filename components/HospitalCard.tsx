@@ -52,6 +52,50 @@ const HospitalCard: React.FC<HospitalCardProps> = ({ data, isFavorite, onToggleF
     );
   };
 
+  const renderSevereDisease = () => {
+    if (!data.severeDisease) return null;
+
+    const diseases = [
+      { key: 'MKioskTy1', label: '뇌출혈수술' },
+      { key: 'MKioskTy2', label: '뇌경색재관류' },
+      { key: 'MKioskTy3', label: '심근경색재관류' },
+      { key: 'MKioskTy4', label: '복부손상수술' },
+      { key: 'MKioskTy5', label: '사지접합수술' },
+      { key: 'MKioskTy6', label: '응급내시경' },
+      { key: 'MKioskTy7', label: '응급투석' },
+      { key: 'MKioskTy8', label: '조산산모' },
+      { key: 'MKioskTy9', label: '정신질환자' },
+      { key: 'MKioskTy10', label: '신생아' },
+      { key: 'MKioskTy11', label: '중증화상' },
+      { key: 'MKioskTy12', label: '소아응급' },
+    ];
+
+    const available = diseases.filter(d => data.severeDisease![d.key] === 'Y' || data.severeDisease![d.key] === '가능');
+    const unavailable = diseases.filter(d => data.severeDisease![d.key] === 'N' || data.severeDisease![d.key] === '불가');
+
+    if (available.length === 0 && unavailable.length === 0) return null;
+
+    return (
+      <div className="mt-3 pt-3 border-t border-slate-100">
+        <h4 className="text-[11px] font-bold text-slate-500 mb-2">중증질환자 수용 가능 여부</h4>
+        <div className="flex flex-col gap-1.5">
+          {available.length > 0 && (
+            <div className="flex items-start gap-1">
+              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 whitespace-nowrap shrink-0">수용 가능</span>
+              <span className="text-xs text-slate-600 leading-relaxed">{available.map(d => d.label).join(', ')}</span>
+            </div>
+          )}
+          {unavailable.length > 0 && (
+            <div className="flex items-start gap-1">
+              <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-100 whitespace-nowrap shrink-0">수용 불가</span>
+              <span className="text-xs text-slate-600 leading-relaxed">{unavailable.map(d => d.label).join(', ')}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={`bg-white rounded-xl shadow-md border overflow-hidden hover:shadow-lg transition-all duration-200 ${isFavorite ? 'border-amber-300 ring-1 ring-amber-100' : 'border-slate-100'}`}>
       {/* Header Section */}
@@ -159,6 +203,8 @@ const HospitalCard: React.FC<HospitalCardProps> = ({ data, isFavorite, onToggleF
                 {data.hventiayn === 'Y' && <span className="px-2 py-0.5 text-[10px] bg-slate-200 text-slate-600 rounded-full font-medium">인공호흡기</span>}
             </div>
         </div>
+        
+        {renderSevereDisease()}
       </div>
     </div>
   );

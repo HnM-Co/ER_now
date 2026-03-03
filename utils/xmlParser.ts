@@ -91,3 +91,38 @@ export const parseHospitalListXml = (xmlText: string): Map<string, { lat: number
     return new Map();
   }
 };
+
+/**
+ * Parses the XML response from the Severe Disease API (getSrsillDissAceptncPosblInfoInqire).
+ * Returns a Map of hpid -> { [key: string]: string }
+ */
+export const parseSevereDiseaseXml = (xmlText: string): Map<string, Record<string, string>> => {
+  try {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+    const items = xmlDoc.getElementsByTagName("item");
+    const result = new Map<string, Record<string, string>>();
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const hpid = item.getElementsByTagName("hpid")[0]?.textContent;
+      
+      if (hpid) {
+        const diseaseData: Record<string, string> = {};
+        // MKioskTy1 to MKioskTy28
+        for (let j = 1; j <= 28; j++) {
+          const key = `MKioskTy${j}`;
+          const val = item.getElementsByTagName(key)[0]?.textContent?.trim();
+          if (val) {
+            diseaseData[key] = val;
+          }
+        }
+        result.set(hpid, diseaseData);
+      }
+    }
+    return result;
+  } catch (e) {
+    console.error("XML Severe Disease Parsing Error", e);
+    return new Map();
+  }
+};

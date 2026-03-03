@@ -20,6 +20,12 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api\/er-list/, ''),
         secure: false,
       },
+      '/api/er-severe': {
+        target: 'https://apis.data.go.kr/B552657/ErmctInfoInqireService/getSrsillDissAceptncPosblInfoInqire',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/er-severe/, ''),
+        secure: false,
+      },
     },
   },
 });

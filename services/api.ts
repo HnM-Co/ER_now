@@ -1,5 +1,5 @@
 import { HospitalData, REGIONS } from '../types';
-import { parseHospitalXml, parseHospitalListXml } from '../utils/xmlParser';
+import { parseHospitalXml, parseHospitalListXml, parseSevereDiseaseXml } from '../utils/xmlParser';
 
 // [실제 데이터 보장 수정]
 // 환경변수가 로드되지 않는 상황에서도 실제 데이터를 보여주기 위해 키를 백업으로 설정합니다.
@@ -7,8 +7,10 @@ const ENV_API_KEY = (import.meta as any).env?.VITE_DATA_API_KEY || "a0f92aac1356
 
 const CACHE_KEY_PREFIX = "ER_DATA_CACHE_";
 const LIST_CACHE_KEY_PREFIX = "ER_LIST_CACHE_";
+const SEVERE_CACHE_KEY_PREFIX = "ER_SEVERE_CACHE_";
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes for real-time data
 const LIST_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours for hospital list (coordinates)
+const SEVERE_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes for severe disease data
 
 export type DataSourceType = 'REALTIME' | 'SIMULATION';
 
@@ -25,6 +27,11 @@ interface CachedData {
 interface CachedList {
   timestamp: number;
   data: Map<string, { lat: number, lon: number }>;
+}
+
+interface CachedSevere {
+  timestamp: number;
+  data: Map<string, Record<string, string>>;
 }
 
 // Helper to serialize Map for localStorage
@@ -86,6 +93,14 @@ const generateMockData = (region: string): HospitalData[] => {
     const totalDel = Math.random() > 0.5 ? 2 + Math.floor(Math.random() * 5) : 0;
     const availDel = totalDel > 0 ? Math.floor(Math.random() * totalDel) : 0;
 
+    const severeDisease: Record<string, string> = {};
+    for (let j = 1; j <= 12; j++) {
+      const rand = Math.random();
+      if (rand > 0.6) severeDisease[`MKioskTy${j}`] = 'Y';
+      else if (rand > 0.3) severeDisease[`MKioskTy${j}`] = 'N';
+      else severeDisease[`MKioskTy${j}`] = '정보미제공';
+    }
+
     return {
       hpid: `MOCK_${region}_${i}`,
       dutyName: `${baseRegion.label} 사랑${i+1}병원 [가상]`,
@@ -109,7 +124,8 @@ const generateMockData = (region: string): HospitalData[] => {
       phpid: `PH${i}`,
       lastUpdate: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
       wgs84Lat: lat,
-      wgs84Lon: lon
+      wgs84Lon: lon,
+      severeDisease
     };
   });
 };
@@ -171,6 +187,61 @@ const fetchHospitalList = async (fullRegionValue: string, serviceKey: string): P
   }
 };
 
+const fetchSevereDiseaseData = async (fullRegionValue: string, serviceKey: string): Promise<Map<string, Record<string, string>>> => {
+  const parts = fullRegionValue.split(' ');
+  const stage1 = parts[0] === '전국' ? '' : parts[0];
+  const stage2 = (parts.length > 1 && parts[0] !== '전국') ? parts.slice(1).join(' ') : undefined;
+
+  const cacheKey = `${SEVERE_CACHE_KEY_PREFIX}${fullRegionValue}`;
+  const cachedRaw = localStorage.getItem(cacheKey);
+
+  if (cachedRaw) {
+    try {
+      const cached: CachedSevere = JSON.parse(cachedRaw, mapReviver);
+      const now = Date.now();
+      if (now - cached.timestamp < SEVERE_CACHE_DURATION) {
+        return cached.data;
+      }
+    } catch (e) {
+      console.warn("Failed to parse cached severe disease data", e);
+      localStorage.removeItem(cacheKey);
+    }
+  }
+
+  const baseUrl = "/api/er-severe";
+  let queryString = `serviceKey=${serviceKey}&pageNo=1&numOfRows=1000`;
+  
+  if (stage1) {
+    queryString += `&STAGE1=${encodeURIComponent(stage1)}`;
+  }
+  if (stage2) {
+    queryString += `&STAGE2=${encodeURIComponent(stage2)}`;
+  }
+  
+  const targetUrl = `${baseUrl}?${queryString}`;
+
+  try {
+    const response = await fetch(targetUrl);
+    if (!response.ok) return new Map();
+    
+    const xmlText = await response.text();
+    const severeMap = parseSevereDiseaseXml(xmlText);
+    
+    if (severeMap.size > 0) {
+      const cachePayload = {
+        timestamp: Date.now(),
+        data: severeMap
+      };
+      localStorage.setItem(cacheKey, JSON.stringify(cachePayload, mapReplacer));
+    }
+    
+    return severeMap;
+  } catch (error) {
+    console.error("Failed to fetch severe disease data:", error);
+    return new Map();
+  }
+};
+
 export const fetchHospitalData = async (fullRegionValue: string): Promise<FetchResult> => {
   // Clean the API Key (remove quotes/spaces)
   const rawKey = ENV_API_KEY.replace(/['"]/g, '').trim();
@@ -220,10 +291,11 @@ export const fetchHospitalData = async (fullRegionValue: string): Promise<FetchR
   const targetUrl = `${baseUrl}?${queryString}`;
   
   try {
-    // Parallel Fetch: Real-time Data AND Hospital List (for coordinates)
-    const [realTimeResponse, coordsMap] = await Promise.all([
+    // Parallel Fetch: Real-time Data AND Hospital List (for coordinates) AND Severe Disease Data
+    const [realTimeResponse, coordsMap, severeMap] = await Promise.all([
       fetch(targetUrl),
-      fetchHospitalList(fullRegionValue, serviceKey)
+      fetchHospitalList(fullRegionValue, serviceKey),
+      fetchSevereDiseaseData(fullRegionValue, serviceKey)
     ]);
 
     if (!realTimeResponse.ok) {
@@ -241,13 +313,19 @@ export const fetchHospitalData = async (fullRegionValue: string): Promise<FetchR
     const parsedData = parseHospitalXml(xmlText);
 
     if (parsedData.length > 0) {
-      // Merge Coordinates
+      // Merge Coordinates and Severe Disease Data
       const mergedData = parsedData.map(hospital => {
         const coords = coordsMap.get(hospital.hpid);
+        const severeDisease = severeMap.get(hospital.hpid);
+        
+        let merged = { ...hospital };
         if (coords) {
-          return { ...hospital, wgs84Lat: coords.lat, wgs84Lon: coords.lon };
+          merged = { ...merged, wgs84Lat: coords.lat, wgs84Lon: coords.lon };
         }
-        return hospital;
+        if (severeDisease) {
+          merged = { ...merged, severeDisease };
+        }
+        return merged;
       });
 
       const cachePayload: CachedData = {
