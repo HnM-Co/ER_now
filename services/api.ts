@@ -5,9 +5,9 @@ import { parseHospitalXml, parseHospitalListXml, parseSevereDiseaseXml } from '.
 // 환경변수가 로드되지 않는 상황에서도 실제 데이터를 보여주기 위해 키를 백업으로 설정합니다.
 const ENV_API_KEY = (import.meta as any).env?.VITE_DATA_API_KEY || "a0f92aac1356efd3339d4c1a42571bc0420edd9fe0a5b9c4a4ee02386223cf60";
 
-const CACHE_KEY_PREFIX = "ER_DATA_CACHE_";
-const LIST_CACHE_KEY_PREFIX = "ER_LIST_CACHE_";
-const SEVERE_CACHE_KEY_PREFIX = "ER_SEVERE_CACHE_";
+const CACHE_KEY_PREFIX = "ER_DATA_CACHE_V2_";
+const LIST_CACHE_KEY_PREFIX = "ER_LIST_CACHE_V2_";
+const SEVERE_CACHE_KEY_PREFIX = "ER_SEVERE_CACHE_V2_";
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes for real-time data
 const LIST_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours for hospital list (coordinates)
 const SEVERE_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes for severe disease data
