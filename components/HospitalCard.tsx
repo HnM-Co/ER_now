@@ -20,6 +20,14 @@ const HospitalCard: React.FC<HospitalCardProps> = ({ data, isFavorite, onToggleF
     return `https://map.kakao.com/link/search/${encodeURIComponent(data.dutyName)}`;
   };
 
+  const handleCallClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const message = "이 번호는 응급실 직통 번호입니다. 현재 의료진이 응급 환자의 생명을 살리고 있습니다. 잔여 병상이 있을 때만 출발 전 '진료 가능 여부'를 짤막하게 확인해 주세요.";
+    if (window.confirm(message)) {
+      window.location.href = `tel:${data.dutyTel3}`;
+    }
+  };
+
   const renderBedStat = (title: string, available: number, total?: number, isSpecial = false) => {
     // If we have total, show Avail/Total. If not, just Avail.
     // If total is 0 or undefined, logic handles it gracefully.
@@ -125,7 +133,7 @@ const HospitalCard: React.FC<HospitalCardProps> = ({ data, isFavorite, onToggleF
           </div>
           
           <div className="flex flex-col gap-1 mt-2">
-            <a href={`tel:${data.dutyTel3}`} className="inline-flex items-center text-sm text-slate-500 hover:text-indigo-600 transition-colors">
+            <a href={`tel:${data.dutyTel3}`} onClick={handleCallClick} className="inline-flex items-center text-sm text-slate-500 hover:text-indigo-600 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                 </svg>
@@ -170,6 +178,7 @@ const HospitalCard: React.FC<HospitalCardProps> = ({ data, isFavorite, onToggleF
             {/* Call Action Button */}
             <a 
                 href={`tel:${data.dutyTel3}`} 
+                onClick={handleCallClick}
                 className="bg-indigo-600 text-white p-2.5 rounded-full shadow-md active:scale-95 transition-transform hover:bg-indigo-700 mt-1"
                 aria-label="Call Hospital"
             >
